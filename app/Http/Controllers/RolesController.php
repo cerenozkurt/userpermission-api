@@ -119,10 +119,5 @@ class RolesController extends ApiResponseController
         return ['in_'.$role.'_role' => UserResource::collection($users)  ];
     }
 
-    public function deneme()
-    {
-        
-    }
-
 
 }

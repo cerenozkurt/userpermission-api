@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Hash;
 
 class AuthController extends ApiResponseController
 {
-    public function all_user()
+    /*public function all_user()
     {
         try {
             $users = User::orderby('name')->get();
@@ -23,9 +23,9 @@ class AuthController extends ApiResponseController
             return $this->apiResponse(false, 'No registered users.', null, null, JsonResponse::HTTP_NOT_FOUND);
         } catch (\Exception $e) {
         }
-    }
+    }*/
 
-    public function register(AuthRequest $request)
+    public function create_user(AuthRequest $request)
     {
         $user = User::create([
             'name' => $request->name,
@@ -44,7 +44,7 @@ class AuthController extends ApiResponseController
     public function login(AuthRequest $request)
     {
         try {
-            $user = User::where('email',$request->email)->first();
+            $user = User::where('email', $request->email)->first();
             if (!$user) {
                 return $this->apiResponse(false, 'Geçersiz email.', null, null, JsonResponse::HTTP_NOT_FOUND);
             }
@@ -70,11 +70,25 @@ class AuthController extends ApiResponseController
             }
         } catch (\Exception $e) {
             return $this->apiResponse(false, $e->getMessage(), null, null, JsonResponse::HTTP_NOT_FOUND);
-            
         }
     }
 
+    public function update_user(AuthRequest $request)
+    {
+        $user_id = auth()->user()->id;
+        $user = User::find($user_id);
 
+        if (User::where('email', $request->email)->first() == null || $user->email == $request->email) {
+            $user->name = $request->name ?? $user->name;
+            $user->email = $request->email ?? $user->email;
+            $user->password = Hash::make($request->password) ?? $user->password;
+            $user->save();
 
-
+            if ($user) {
+                return $this->apiResponse(true, 'Kullanıcı Başarıyla Güncellendi!', 'user', new UserResource($user), JsonResponse::HTTP_CREATED);
+            }
+            return $this->apiResponse(false, 'Kullanıcı güncellenirken bir hata gerçekleşti!', null, null,  JsonResponse::HTTP_NOT_FOUND);
+        }
+        return $this->apiResponse(false, 'Bu email zaten kayıtlıdır.', null, null, JsonResponse::HTTP_NOT_FOUND);
+    }
 }

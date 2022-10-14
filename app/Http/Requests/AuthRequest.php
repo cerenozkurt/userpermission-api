@@ -25,7 +25,7 @@ class AuthRequest extends BaseFormRequest
     public function rules(Request $request)
     {
         switch ($request->route()->getActionMethod()) {
-            case 'register':
+            case 'create_user':
                 return [
                     'name' => ['required', 'string'],
                     'email' => ['required', 'string', 'email', 'unique:users,email'],
@@ -38,6 +38,12 @@ class AuthRequest extends BaseFormRequest
                     'email' => ['required', 'string', 'email'],
                 ];
                 break;
+            case 'update_user':
+                return [
+                    'name' => ['string'],
+                    'email' => ['string', 'email'],
+                    'password' => ['string'],
+                ];
         }
     }
 }
