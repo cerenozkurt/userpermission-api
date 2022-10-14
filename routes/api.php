@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\PostController;
 use App\Http\Controllers\RolesController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
@@ -53,14 +54,36 @@ Route::middleware('auth:sanctum')->group(function () {
     });*/
 
     Route::prefix('/category')->controller(CategoryController::class)->group(function () {
-
         Route::post('/', 'create_category')->name('categories.create');
         Route::delete('/{category}', 'delete_category')->name('categories.delete')->middleware('category.id.control');
         Route::post('/{category}/update', 'update_category')->name('categories.update')->middleware('category.id.control');
+    });
+
+    Route::prefix('/post')->controller(PostController::class)->group(function(){
+        Route::post('/','create_post')->name('posts.create');
+        Route::get('/awaiting', 'awaiting_approve');
+        Route::get('{post}/approved','approve_post')->middleware('post.id.control');
+        Route::delete('/{post}','delete_post')->name('posts.delete')->middleware('post.id.control');
+        Route::post('/{post}/update','update_post')->name('posts.update')->middleware('post.id.control');
+        Route::get('/my','my_posts');
+        Route::get('/{user}/posts', 'allposts_by_user')->middleware('user.id.control');
+        
     });
 });
 
 
 
 //PUBLİC
-Route::get('/category', [CategoryController::class, 'index'])->name('categories.name');
+Route::prefix('public')->group(function(){
+    Route::get('/category', [CategoryController::class, 'index'])->name('categories.name');
+
+    Route::prefix('/post')->controller(PostController::class)->group(function(){
+        Route::get('/', 'index')->name('posts.name');
+        Route::get('/{post}',  'post_by_id')->middleware('post.id.control');
+        Route::get('/{user}/posts', 'post_by_user')->middleware('user.id.control');
+
+    });
+    
+
+});
+

@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 class CategoryController extends ApiResponseController
 {
 
-    public function _construct()
+    public function __construct()
     {
         $this->middleware('role:superadmin|admin|editor', ['only' => ['create_category', 'delete_category', 'update_category']]);
     }
