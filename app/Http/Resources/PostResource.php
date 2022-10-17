@@ -17,6 +17,7 @@ class PostResource extends JsonResource
         return[
             'id' => $this->id,
             'state' => $this->state == 0 ? 'Onay Bekliyor..':'Aktif.',
+            'categories' =>$this->categories->pluck('name') ,
             'title' => $this->title,
             'content' => $this->content,
             'like_count' => $this->like_count,

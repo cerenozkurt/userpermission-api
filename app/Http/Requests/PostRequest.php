@@ -24,17 +24,34 @@ class PostRequest extends BaseFormRequest
      */
     public function rules(Request $request)
     {
-        switch($request->route()->getActionMethod()){
+        switch ($request->route()->getActionMethod()) {
             case 'create_post':
                 return [
                     'title' => ['required', 'max:100'],
                     'content' => ['required', 'max:15000'],
+                    'category_id' => ['required', 'exists:categories,id'],
                 ];
                 break;
             case 'update_post':
                 return [
                     'title' => ['max:100'],
-                    'content' => ['max:15000']
+                    'content' => ['max:15000'],
+                    'category_id' => ['exists:categories,id'],
+                ];
+                break;
+            case 'post_add_to_category':
+                return [
+                    'category_id' =>  ['required', 'integer', 'exists:categories,id']
+                ];
+                break;
+            case 'post_delete_to_category':
+                return [
+                    'category_id' =>  ['required', 'integer', 'exists:categories,id']
+                ];
+                break;
+            case 'post_update_to_category':
+                return [
+                    'category_id' =>  ['required']
                 ];
                 break;
         }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\CategoryRequest;
 use App\Http\Resources\CategoryResource;
+use App\Http\Resources\PostResource;
 use App\Models\Category;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -65,5 +66,20 @@ class CategoryController extends ApiResponseController
             return $this->apiResponse(false, 'Kategori güncellenemedi.', null, null, JsonResponse::HTTP_NOT_FOUND);
         }
         return $this->apiResponse(false, 'Kategori ismi zaten mevcuttur. Başka isim deneyiniz.', null, null, JsonResponse::HTTP_NOT_FOUND);
+    }
+
+    //kategorilerin postlarını getir
+    public function get_posts_of_category($id)
+    {
+        $category = Category::find($id);
+        return $this->apiResponse(true, $category->name . " kategorisine ait yayınlanmış postlar listelendi.", 'posts', PostResource::collection($category->posts->where('state', '1')), JsonResponse::HTTP_OK);
+    }
+
+    //isme göre kategori arama
+    public function search($search)
+    {
+        $category_search = Category::where('name', 'LIKE', '%' . $search . '%')->orderby('id', 'desc');
+
+        return $this->apiResponse(true, 'Arama Sonuçları', 'categories', CategoryResource::collection($category_search->get()), JsonResponse::HTTP_OK);
     }
 }

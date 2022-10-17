@@ -5,10 +5,14 @@ namespace App\Http\Controllers;
 use App\Http\Requests\PostRequest;
 use App\Http\Resources\PostResource;
 use App\Http\Resources\UserResource;
+use App\Models\Category;
+use App\Models\CategoryPost;
 use App\Models\Post;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+
+use function PHPUnit\Framework\isEmpty;
 
 class PostController extends ApiResponseController
 {
@@ -51,6 +55,8 @@ class PostController extends ApiResponseController
                 'comment_count' => 0,
                 'state' => '0',
             ]);
+            $category = Category::find([$request->category_id]);
+            $post->categories()->attach($category);
         } else {
             $post = Post::create([
                 'user_id' => $user->id,
@@ -60,11 +66,103 @@ class PostController extends ApiResponseController
                 'comment_count' => 0,
                 'state' => '1',
             ]);
+            $category = Category::find([$request->category_id]);
+            $post->categories()->attach($category); //posta kategoriyi ekler
         }
         if ($post) {
             return $this->apiResponse(true, 'Post eklendi.', 'post', new PostResource($post), JsonResponse::HTTP_OK);
         }
         return $this->apiResponse(false, 'Post eklenirken bir hata oluştu.', null, null, JsonResponse::HTTP_NOT_FOUND);
+    }
+
+
+    /* //posta kategori ekle
+    public function post_add_to_category($id, PostRequest $request)
+    {
+        $post = Post::find($id);
+
+
+        if (($post->categories()->wherePivot('category_id', $request->category_id)->first()) == null) { //boşsa oluştur
+            $category = Category::find([$request->category_id]);
+            $post->categories()->attach($category);
+
+            return $this->apiResponse(true, Category::find($request->category_id)->name . ' kategorisine ' . $id . "id'li post eklendi.", null, null, JsonResponse::HTTP_OK);
+        }
+        return $this->apiResponse(false, 'Post kategoriye zaten eklidir.', null, null, JsonResponse::HTTP_NOT_FOUND);
+    }*/
+
+    //posta kategori ekle veya güncelle
+    public function post_update_to_category($id, PostRequest $request)
+    {
+        $post = Post::find($id);
+
+        $category_id = $request->category_id;
+        $deger = explode(",", $category_id);
+
+        switch (count($deger)) {
+            case 1:
+                if (Category::find($deger[0]) != null) {
+                    $post->categories()->sync([$deger[0]]);
+                    return $this->apiResponse(true, $post->categories[0]->name . ' isimli kategori ' . $id . " id'li posta eklendi.", null, null, JsonResponse::HTTP_OK);
+                    break;
+                }
+                return $this->apiResponse(false, 'Category bulunamadı.', 'olmayan_category', $deger[0], JsonResponse::HTTP_NOT_FOUND);
+
+            case 2:
+                if (Category::find($deger[0]) != null) {
+                    if (Category::find($deger[1]) != null) {
+                        $post->categories()->sync([$deger[0], $deger[1]]);
+                        return $this->apiResponse(true, $post->categories[0]->name . ' ve ' . $post->categories[1]->name . ' kategorileri ' . $id . " id'li posta eklendi.", null, null, JsonResponse::HTTP_OK);
+                        break;
+                    }
+                    return $this->apiResponse(false, 'Category bulunamadı.', 'olmayan_category', $deger[1], JsonResponse::HTTP_NOT_FOUND);
+                }
+                return $this->apiResponse(false, 'Category bulunamadı.', 'olmayan_category', $deger[0], JsonResponse::HTTP_NOT_FOUND);
+
+
+            case 3:
+                if (Category::find($deger[0]) != null) {
+                    if (Category::find($deger[1]) != null) {
+                        if (Category::find($deger[2]) != null) {
+                            $post->categories()->sync([$deger[0], $deger[1], $deger[2]]);
+                            return $this->apiResponse(true, $post->categories[0]->name . ', ' . $post->categories[1]->name . ' ve ' . $post->categories[2]->name . ' kategorileri ' . $id . " id'li posta eklendi.", null, null, JsonResponse::HTTP_OK);
+                            break;
+                        }
+                        return $this->apiResponse(false, 'Category bulunamadı.', 'olmayan_category', $deger[2], JsonResponse::HTTP_NOT_FOUND);
+                    }
+                    return $this->apiResponse(false, 'Category bulunamadı.', 'olmayan_category', $deger[1], JsonResponse::HTTP_NOT_FOUND);
+                }
+                return $this->apiResponse(false, 'Category bulunamadı.', 'olmayan_category', $deger[0], JsonResponse::HTTP_NOT_FOUND);
+
+            default:
+                return $this->apiResponse(false, 'En fazla 3 kategori ekleyebilirsiniz.', null, null, JsonResponse::HTTP_NOT_FOUND);
+        }
+    }
+
+
+    //postun kategorilerini getir
+    public function post_get_to_category($id)
+    {
+        $post = Post::find($id);
+        if (!($post->categories->toarray())) { //category yoksa
+            return $this->apiResponse(false, $id . " 'li postun kategorisi bulunamadı.", null, null, JsonResponse::HTTP_OK);
+        }
+        return $this->apiResponse(true, $id . " id'li postun kategorileri listelendi.", 'categories', $post->categories->pluck('name'), JsonResponse::HTTP_OK);
+    }
+
+    
+    //posttan kategoriyi çıkart
+    public function post_delete_to_category($id, PostRequest $request)
+    {
+        $post = Post::find($id);
+
+        if (($post->categories()->wherePivot('category_id', $request->category_id)->first()) == null) { //boşsa uyarı
+            return $this->apiResponse(false, 'Post ve kategori ilişkisi bulunmamaktadır.', null, null, JsonResponse::HTTP_NOT_FOUND);
+        }
+        $category = Category::find($request->category_id);
+        $post->categories()->detach($category);
+
+        return $this->apiResponse(true, 'Kategori posttan kaldırılmıştır.', null, null, JsonResponse::HTTP_NOT_FOUND);
     }
 
     //onay bekleyen postlar listesi
@@ -150,8 +248,8 @@ class PostController extends ApiResponseController
         $user = auth()->user();
 
         $posts = Post::where('user_id', $user->id)->orderby('created_at')->get();
-        
-        if ( $posts->count() != 0 ) {
+
+        if ($posts->count() != 0) {
             return $this->apiResponse(true, 'Postlarınız listelendi.', 'posts', PostResource::collection($posts), JsonResponse::HTTP_OK);
         }
         return  $this->apiResponse(false, 'Postunuz bulunamamıştır.', null, null, JsonResponse::HTTP_NOT_FOUND);
@@ -160,10 +258,10 @@ class PostController extends ApiResponseController
     //idsi  girilen kullanıcının postları /herkes görür
     public function post_by_user($id)
     {
-        $posts = Post::where('user_id', $id)->where('state','1')->orderby('created_at')->get();
-        
+        $posts = Post::where('user_id', $id)->where('state', '1')->orderby('created_at')->get();
+
         if ($posts->count() != 0) {
-            return $this->apiResponse(true, $id." id'li kullanıcın postları listelendi.", 'posts', PostResource::collection($posts), JsonResponse::HTTP_OK);
+            return $this->apiResponse(true, $id . " id'li kullanıcın postları listelendi.", 'posts', PostResource::collection($posts), JsonResponse::HTTP_OK);
         }
         return  $this->apiResponse(false, 'Post bulunamamıştır.', null, null, JsonResponse::HTTP_NOT_FOUND);
     }
@@ -173,11 +271,10 @@ class PostController extends ApiResponseController
     public function allposts_by_user($id)
     {
         $posts = Post::where('user_id', $id)->orderby('created_at')->get();
-        
+
         if ($posts->count() != 0) {
-            return $this->apiResponse(true, $id." id'li kullanıcın postları listelendi.", 'posts', PostResource::collection($posts), JsonResponse::HTTP_OK);
+            return $this->apiResponse(true, $id . " id'li kullanıcın postları listelendi.", 'posts', PostResource::collection($posts), JsonResponse::HTTP_OK);
         }
         return  $this->apiResponse(false, 'Post bulunamamıştır.', null, null, JsonResponse::HTTP_NOT_FOUND);
     }
-
 }
