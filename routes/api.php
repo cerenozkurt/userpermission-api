@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\LikeController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\RolesController;
@@ -84,6 +85,13 @@ Route::middleware('auth:sanctum')->group(function () {
         
     });
 
+    Route::prefix('/like')->controller(LikeController::class)->group(function(){
+        Route::post('/{post}','store')->middleware(['post.id.control','post.state.control']);
+        Route::delete('/{like}','destroy')->middleware('like.id.control');
+    
+    });
+
+
 });
 
 
@@ -98,6 +106,10 @@ Route::prefix('public')->group(function () {
         Route::get('/{user}/posts', 'post_by_user')->middleware('user.id.control');
         Route::get('{post}/category', 'post_get_to_category')->middleware(['post.state.control','post.id.control']); //herkes
     });
+
+    Route::get('/like/{post}',[LikeController::class, 'index'])->middleware(['post.state.control','post.id.control']);
+    Route::get('/like',[LikeController::class, 'most_liked']);
+
 
     Route::prefix('/comment')->controller(CommentController::class)->group(function(){
         Route::get('/{post}/posts','comments_of_post')->middleware(['post.state.control','post.id.control']);

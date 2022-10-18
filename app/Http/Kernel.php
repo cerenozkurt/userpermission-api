@@ -69,6 +69,7 @@ class Kernel extends HttpKernel
         'category.id.control' => \App\Http\Middleware\Post\CategoryIdControl::class,
         'post.id.control' => \App\Http\Middleware\Post\PostIdControl::class,
         'comment.id.control' => \App\Http\Middleware\Post\CommentIdControl::class,
+        'like.id.control' => \App\Http\Middleware\Post\LikeIdControl::class,
         'post.state.control' => \App\Http\Middleware\Post\PostStateControl::class,
 
 

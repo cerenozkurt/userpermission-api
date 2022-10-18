@@ -9,10 +9,11 @@ use App\Models\Comment;
 use App\Models\Post;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class CommentController extends ApiResponseController
 {
+
+
 
     /**
      * Display a listing of the resource.
@@ -21,7 +22,7 @@ class CommentController extends ApiResponseController
      */
     public function index()
     {
-       //
+        //
     }
 
     /**
@@ -30,21 +31,24 @@ class CommentController extends ApiResponseController
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store($post, CommentRequest $request)
+    public function store($post_id, CommentRequest $request)
     {
         $user = auth()->user();
         $comment = Comment::create([
             'user_id' => $user->id,
-            'post_id'=> $post, 
+            'post_id' => $post_id,
             'comment' => $request->comment
 
         ]);
-        
-        if($comment){
+
+        $post =  Post::find($post_id);
+        $post->comment_count = $post->comment_count + 1;
+        $post->save();
+
+        if ($comment) {
             return $this->apiResponse(true, 'Yorum paylaşıldı.', 'comment', new CommentResource($comment), JsonResponse::HTTP_OK);
         }
         return $this->apiResponse(false, 'Yorum paylaşılırken  bir hata oluştu.', null, null, JsonResponse::HTTP_NOT_FOUND);
-
     }
 
     /**
@@ -57,7 +61,6 @@ class CommentController extends ApiResponseController
     {
         $comment = Comment::find($id);
         return $this->apiResponse(true, 'Yorum görüntüleniyor.', 'comment', new CommentResource($comment), JsonResponse::HTTP_OK);
-
     }
 
     /**
@@ -69,12 +72,18 @@ class CommentController extends ApiResponseController
      */
     public function update(CommentRequest $request, $id)
     {
+        //yorum benimse güncelle
+        $user = auth()->user();
         $comment = Comment::find($id);
-        $comment->comment = $request->comment ?? $comment->comment;
-        $comment->save();
+        $roles = $user->roles->pluck('name')->toarray();
 
-        return $this->apiResponse(true, 'Yorum güncellendi.', 'comment', new CommentResource($comment), JsonResponse::HTTP_OK);
+        if ($comment->user_id == $user->id) { //yorum kullanıcının kendi yorumuysa veya kullanıcı admin/superadmin/editorse
+            $comment->comment = $request->comment ?? $comment->comment;
+            $comment->save();
 
+            return $this->apiResponse(true, 'Yorum güncellendi.', 'comment', new CommentResource($comment), JsonResponse::HTTP_OK);
+        }
+        return $this->apiResponse(false, 'Yetkisiz işlem.', null, null, JsonResponse::HTTP_FORBIDDEN);
     }
 
     /**
@@ -86,12 +95,25 @@ class CommentController extends ApiResponseController
     public function destroy($id)
     {
         $comment = Comment::find($id);
-        $delete = $comment->delete();
+        $post_id = $comment->post_id;
 
-        if($delete){
-            return $this->apiResponse(true, 'Yorum silindi.', null, null, JsonResponse::HTTP_OK);
+        $user = auth()->user();
+
+        $roles = $user->roles->pluck('name')->toarray();
+
+        if ($comment->user_id == $user->id || in_array('superadmin', $roles) || in_array('admin', $roles) || in_array('editor', $roles)) { //yorum kullanıcının kendi yorumuysa veya kullanıcı admin/superadmin/editorse
+            $delete = $comment->delete();
+            $post =  Post::find($post_id);
+            $post->comment_count = $post->comment_count - 1;
+            $post->save();
+
+            if ($delete) {
+                return $this->apiResponse(true, 'Yorum silindi.', null, null, JsonResponse::HTTP_OK);
+            }
+            return $this->apiResponse(false, 'Yorum silinirken bir hata oluştu.', null, null, JsonResponse::HTTP_NOT_FOUND);
         }
-        return $this->apiResponse(false, 'Yorum silinirken bir hata oluştu.', null, null, JsonResponse::HTTP_NOT_FOUND);
+
+        return $this->apiResponse(false, 'Yetkisiz işlem.', null, null, JsonResponse::HTTP_FORBIDDEN);
     }
 
 
@@ -99,10 +121,10 @@ class CommentController extends ApiResponseController
     public function comments_of_post($post_id)
     {
         $post = Post::find($post_id);
-        if (!($post->comments->toarray())){
+        if (!($post->comments->toarray())) {
             return $this->apiResponse(false, 'Bu posta ait yorum bulunamadı.', 'post', new PostResource($post), JsonResponse::HTTP_NOT_FOUND);
         }
-        return $this->apiResponse(true, 'Postun yorumları.', 'comments', CommentResource::collection($post->comments),JsonResponse::HTTP_OK);
+        return $this->apiResponse(true, 'Postun yorumları.', 'comments', CommentResource::collection($post->comments), JsonResponse::HTTP_OK);
     }
 
 
@@ -110,11 +132,10 @@ class CommentController extends ApiResponseController
     public function comments_of_user($user_id)
     {
         $user = User::find($user_id);
-        $comments = Comment::where('user_id', $user_id)->get();
-        if(!($comments->toarray())){
-            return $this->apiResponse(false, 'Bu kullanıcıya ait yorum bulunamadı.','user',null, JsonResponse::HTTP_NOT_FOUND);
+        $comments = Comment::where('user_id', $user_id)->orderby('created_at','desc')->get();
+        if (!($comments->toarray())) {
+            return $this->apiResponse(false, 'Bu kullanıcıya ait yorum bulunamadı.', 'user', null, JsonResponse::HTTP_NOT_FOUND);
         }
-        return $this->apiResponse(true, 'Kullanıcının yorumları.', 'comments', CommentResource::collection($comments),JsonResponse::HTTP_OK);
+        return $this->apiResponse(true, 'Kullanıcının yorumları.', 'comments', CommentResource::collection($comments), JsonResponse::HTTP_OK);
     }
-    
 }

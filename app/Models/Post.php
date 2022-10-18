@@ -36,6 +36,12 @@ class Post extends Model
     //ONE TO MANY
     public function comments()
     {
-        return $this->hasMany(Comment::class);
+        return $this->hasMany(Comment::class)->orderby('created_at','desc');
+    }
+
+    //ONE TO MANY
+    public function likes()
+    {
+        return $this->hasMany(Like::class);
     }
 }
