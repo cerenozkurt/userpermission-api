@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\CommentController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\RolesController;
@@ -71,9 +72,18 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{user}/posts', 'allposts_by_user')->middleware('user.id.control');
         //Route::post('/{post}/category', 'post_add_to_category')->middleware('post.id.control');
         Route::post('/{post}/category', 'post_update_to_category')->middleware('post.id.control');
-        Route::get('{post}/category', 'post_get_to_category')->middleware('post.id.control');
+
         Route::post('/{post}/category/delete', 'post_delete_to_category')->middleware('post.id.control');
     });
+
+    Route::prefix('/comment')->controller(CommentController::class)->group(function(){
+        Route::post('/{post}','store')->middleware(['post.id.control', 'post.state.control']);
+        Route::post('/{comment}/update','update')->middleware('comment.id.control');
+        Route::get('/{comment}','show')->middleware('comment.id.control');
+        Route::delete('{comment}','destroy')->middleware('comment.id.control');
+        
+    });
+
 });
 
 
@@ -86,5 +96,11 @@ Route::prefix('public')->group(function () {
         Route::get('/', 'index')->name('posts.name');
         Route::get('/{post}',  'post_by_id')->middleware('post.id.control');
         Route::get('/{user}/posts', 'post_by_user')->middleware('user.id.control');
+        Route::get('{post}/category', 'post_get_to_category')->middleware(['post.state.control','post.id.control']); //herkes
+    });
+
+    Route::prefix('/comment')->controller(CommentController::class)->group(function(){
+        Route::get('/{post}/posts','comments_of_post')->middleware(['post.state.control','post.id.control']);
+        Route::get('/{user}/user','comments_of_user')->middleware('user.id.control');
     });
 });

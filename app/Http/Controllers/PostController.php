@@ -18,11 +18,11 @@ class PostController extends ApiResponseController
 {
     public function __construct()
     {
-        $this->middleware('role:superadmin|admin|editor|writer', ['only' => ['create_post', 'delete_post', 'update_post']]);
+        $this->middleware('role:superadmin|admin|editor|writer', ['only' => ['create_post', 'delete_post', 'update_post', 'post_update_to_category','post_delete_to_category']]);
         $this->middleware('role:superadmin|admin|editor', ['only' => ['awaiting_approve', 'approve_post', 'allposts_by_user']]);
     }
 
-    //index herkes görür
+    //index / herkes 
     public function index()
     {
         $post = Post::where('state', '1')->orderby('created_at', 'desc')->paginate(15);
@@ -32,7 +32,7 @@ class PostController extends ApiResponseController
         return  $this->apiResponse(false, 'Kayıtlı post bulunamamıştır.', null, null, JsonResponse::HTTP_NOT_FOUND);
     }
 
-    //birtek postu getir herkes görür
+    //birtek postu getir / herkes 
     public function post_by_id($id)
     {
         $post = Post::find($id);
@@ -91,7 +91,7 @@ class PostController extends ApiResponseController
         return $this->apiResponse(false, 'Post kategoriye zaten eklidir.', null, null, JsonResponse::HTTP_NOT_FOUND);
     }*/
 
-    //posta kategori ekle veya güncelle
+    //posta kategori ekle veya güncellev //s.admin,admin, editor ve kendi yazısı olan writer
     public function post_update_to_category($id, PostRequest $request)
     {
         $post = Post::find($id);
@@ -99,6 +99,21 @@ class PostController extends ApiResponseController
         $category_id = $request->category_id;
         $deger = explode(",", $category_id);
 
+        $user = auth()->user();
+        $roles = $user->roles->pluck('name')->toarray();
+
+        if (in_array('superadmin', $roles) || in_array('admin', $roles) || in_array('editor', $roles)) {
+            return $this->func_post_update_to_category($deger, $post, $id);
+        } elseif ($post->users->id == $user->id) {
+            return $this->func_post_update_to_category($deger, $post, $id);
+        }
+
+        return $this->apiResponse(false, 'Yetkisiz işlem.', null, null, JsonResponse::HTTP_FORBIDDEN);
+    }
+
+    //post update to category fonksiyonunun switch-case'i
+    public function func_post_update_to_category($deger, $post, $id)
+    {
         switch (count($deger)) {
             case 1:
                 if (Category::find($deger[0]) != null) {
@@ -140,7 +155,7 @@ class PostController extends ApiResponseController
     }
 
 
-    //postun kategorilerini getir
+    //postun kategorilerini getir // herkes
     public function post_get_to_category($id)
     {
         $post = Post::find($id);
@@ -150,22 +165,37 @@ class PostController extends ApiResponseController
         return $this->apiResponse(true, $id . " id'li postun kategorileri listelendi.", 'categories', $post->categories->pluck('name'), JsonResponse::HTTP_OK);
     }
 
-    
-    //posttan kategoriyi çıkart
+
+    //posttan kategoriyi çıkart // editor ve kendi yazısı olan writer
     public function post_delete_to_category($id, PostRequest $request)
     {
         $post = Post::find($id);
+        $user = auth()->user();
+        $roles = $user->roles->pluck('name')->toarray();
 
-        if (($post->categories()->wherePivot('category_id', $request->category_id)->first()) == null) { //boşsa uyarı
-            return $this->apiResponse(false, 'Post ve kategori ilişkisi bulunmamaktadır.', null, null, JsonResponse::HTTP_NOT_FOUND);
-        }
-        $category = Category::find($request->category_id);
-        $post->categories()->detach($category);
-
-        return $this->apiResponse(true, 'Kategori posttan kaldırılmıştır.', null, null, JsonResponse::HTTP_NOT_FOUND);
+        if (in_array('superadmin', $roles) || in_array('admin', $roles) || in_array('editor', $roles)) {
+            if (($post->categories()->wherePivot('category_id', $request->category_id)->first()) == null) { //boşsa uyarı
+                return $this->apiResponse(false, 'Post ve kategori ilişkisi bulunmamaktadır.', null, null, JsonResponse::HTTP_NOT_FOUND);
+            }
+            $category = Category::find($request->category_id);
+            $post->categories()->detach($category);
+    
+            return $this->apiResponse(true, 'Kategori posttan kaldırılmıştır.', null, null, JsonResponse::HTTP_NOT_FOUND);
+        } 
+        //writersa post kendi postu mu
+        elseif ($post->users->id == $user->id) {
+            if (($post->categories()->wherePivot('category_id', $request->category_id)->first()) == null) { //boşsa uyarı
+                return $this->apiResponse(false, 'Post ve kategori ilişkisi bulunmamaktadır.', null, null, JsonResponse::HTTP_NOT_FOUND);
+            }
+            $category = Category::find($request->category_id);
+            $post->categories()->detach($category);
+    
+            return $this->apiResponse(true, 'Kategori posttan kaldırılmıştır.', null, null, JsonResponse::HTTP_NOT_FOUND);
+        }  
+        return $this->apiResponse(false, 'Yetkisiz işlem.', null, null, JsonResponse::HTTP_FORBIDDEN);
     }
 
-    //onay bekleyen postlar listesi
+    //onay bekleyen postlar listesi //admin,superadmin,editor
     public function awaiting_approve()
     {
         $posts = Post::where('state', '0')->orderby('created_at')->get();
@@ -242,7 +272,7 @@ class PostController extends ApiResponseController
         return $this->apiResponse(false, 'Yetkisiz Giriş.', null, null, JsonResponse::HTTP_FORBIDDEN);
     }
 
-    //giriş yapmış kullanıcının postları
+    //giriş yapmış kullanıcının postları //user
     public function my_posts()
     {
         $user = auth()->user();
@@ -255,7 +285,7 @@ class PostController extends ApiResponseController
         return  $this->apiResponse(false, 'Postunuz bulunamamıştır.', null, null, JsonResponse::HTTP_NOT_FOUND);
     }
 
-    //idsi  girilen kullanıcının postları /herkes görür
+    //idsi  girilen kullanıcının postları //herkes görür
     public function post_by_user($id)
     {
         $posts = Post::where('user_id', $id)->where('state', '1')->orderby('created_at')->get();
@@ -277,4 +307,5 @@ class PostController extends ApiResponseController
         }
         return  $this->apiResponse(false, 'Post bulunamamıştır.', null, null, JsonResponse::HTTP_NOT_FOUND);
     }
+    
 }

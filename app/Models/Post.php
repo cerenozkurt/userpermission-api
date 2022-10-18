@@ -19,13 +19,23 @@ class Post extends Model
         'state'
     ];
 
+    //ONE TO MANY
     public function users()
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
+
+    //MANY TO MANY
     public function categories()
     {
         return $this->belongsToMany(Category::class, 'category_posts', 'post_id', 'category_id');
+    }
+
+
+    //ONE TO MANY
+    public function comments()
+    {
+        return $this->hasMany(Comment::class);
     }
 }

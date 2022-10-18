@@ -68,6 +68,9 @@ class Kernel extends HttpKernel
         'role.name.control' => \App\Http\Middleware\User\RoleNameControl::class,
         'category.id.control' => \App\Http\Middleware\Post\CategoryIdControl::class,
         'post.id.control' => \App\Http\Middleware\Post\PostIdControl::class,
+        'comment.id.control' => \App\Http\Middleware\Post\CommentIdControl::class,
+        'post.state.control' => \App\Http\Middleware\Post\PostStateControl::class,
+
 
     ];
 }
