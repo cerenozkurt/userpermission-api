@@ -16,7 +16,8 @@ class LikeController extends ApiResponseController
 
     public function __construct()
     {
-        $this->middleware('role:superadmin|admin|editor|writer|user', ['only' => ['store']]);
+        $this->middleware('permission:like.edit', ['only' => ['store','destroy']]);
+        $this->middleware('permission:like.view',['only' => ['index','most_liked']]);
     }
     /**
      * Display a listing of the resource.

@@ -15,6 +15,8 @@ class CategoryController extends ApiResponseController
     public function __construct()
     {
         $this->middleware('role:superadmin|admin|editor', ['only' => ['create_category', 'delete_category', 'update_category']]);
+        $this->middleware('permission:category.edit', ['only'=> ['create_category','delete_category','update_category',]]);
+        $this->middleware('permission:category.view',['only'=>['index','get_posts_of_category','search'] ]);
     }
 
     //kategorileri listele //herkes

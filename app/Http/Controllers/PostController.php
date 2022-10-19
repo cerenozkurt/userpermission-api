@@ -18,8 +18,12 @@ class PostController extends ApiResponseController
 {
     public function __construct()
     {
-        $this->middleware('role:superadmin|admin|editor|writer', ['only' => ['create_post', 'delete_post', 'update_post', 'post_update_to_category','post_delete_to_category']]);
-        $this->middleware('role:superadmin|admin|editor', ['only' => ['awaiting_approve', 'approve_post', 'allposts_by_user']]);
+       // $this->middleware('role:superadmin|admin|editor|writer', ['only' => ['create_post', 'delete_post', 'update_post', 'post_update_to_category','post_delete_to_category']]);
+       // $this->middleware('role:superadmin|admin|editor', ['only' => ['awaiting_approve', 'approve_post', 'allposts_by_user']]);
+
+       $this->middleware('permission:post.edit', ['only'=>['create_post','post_update_to_category','post_delete_to_category','delete_post','update_post']]);
+       $this->middleware('permission:post.approve', ['only'=>['awaiting_approve','approve_post','allposts_by_user']]);
+       $this->middleware('permission:post.view',['only' => ['index','post_by_id','post_get_to_category','post_by_user']]);
     }
 
     //index / herkes 

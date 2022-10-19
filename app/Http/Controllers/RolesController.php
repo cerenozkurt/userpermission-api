@@ -16,10 +16,13 @@ use Spatie\Permission\Models\Role;
 class RolesController extends ApiResponseController
 {
     function __construct()
-    {    $this->middleware('permission:roles.create', ['only' => ['create_role']]);
+    {    
         //$this->middleware('role:superadmin', ['only' => [ 'create_role','delete_role']]); //bu işlemleri superadmin rolüne sahip olanlar gerçekleştirebilir
         //$this->middleware('role:superadmin|admin', ['only' => ['index','role_assignment', 'user_roles', 'role_remove', 'role_filter']]);
-        $this->middleware('permission:roles', ['only' => ['create_role', 'index']]);
+
+        $this->middleware('permission:role.view', ['only' => ['user_roles','role_filter']]);
+        $this->middleware('permission:role.create',['only' => ['create_role']]);
+        $this->middleware('permission:assignment.edit',['only'=>['index','role_assignment','role_remove','delete_role']]);
     } 
 
     //tüm roller

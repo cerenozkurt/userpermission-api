@@ -13,9 +13,12 @@ class UserController extends ApiResponseController
 {
     public function __construct()
     {
-        $this->middleware('role:superadmin', ['only' => ['delete_user']]);
-        $this->middleware('role:superadmin,admin', ['only' => ['index', 'create_user', 'update_user']]);
+      //  $this->middleware('role:superadmin', ['only' => ['delete_user']]);
+       // $this->middleware('role:superadmin,admin', ['only' => ['index', 'create_user', 'update_user']]);
         
+       $this->middleware('permission:user.view',['only'=>['index',]]);
+       $this->middleware('permission:user.edit',['only'=>['create_user','update_user']]);
+       $this->middleware('role_or_permission:superadmin|user.edit',['only'=>['delete_user']]);
     }
 
     //tüm kullanıcıları listeler/ admin ve superadmin
