@@ -64,6 +64,8 @@ class Kernel extends HttpKernel
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'role' => \Spatie\Permission\Middlewares\RoleMiddleware::class,
+        'permission' => \Spatie\Permission\Middlewares\PermissionMiddleware::class,
+        'role_or_permission' => \Spatie\Permission\Middlewares\RoleOrPermissionMiddleware::class,
         'user.id.control' => \App\Http\Middleware\User\UserIdControl::class,
         'role.name.control' => \App\Http\Middleware\User\RoleNameControl::class,
         'category.id.control' => \App\Http\Middleware\Post\CategoryIdControl::class,
@@ -71,6 +73,8 @@ class Kernel extends HttpKernel
         'comment.id.control' => \App\Http\Middleware\Post\CommentIdControl::class,
         'like.id.control' => \App\Http\Middleware\Post\LikeIdControl::class,
         'post.state.control' => \App\Http\Middleware\Post\PostStateControl::class,
+        'permission.id.control' => \App\Http\Middleware\Permission\PermissionIdControl::class,
+        'role.id.control' => \App\Http\Middleware\Permission\RoleIdControl::class,
 
 
     ];

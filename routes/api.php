@@ -34,6 +34,23 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/update', [AuthController::class, 'update_user'])->name('update');
     //Route::get('/all-user',[AuthController::class, 'all_user'])->name('users.all');
 
+    Route::prefix('/permission')->controller(PermissionController::class)->middleware('role:superadmin|admin')->group(function(){
+        Route::get('/','index');
+        Route::post('/','store')->middleware('role:superadmin|admin')->name('permission.store');
+        Route::post('/{permission}', 'update')->middleware('permission.id.control');
+        Route::delete('{permission}','destroy')->middleware('permission.id.control');
+
+        Route::post('/role/{permission}','permission_assignRole')->middleware('permission.id.control');
+        Route::delete('/role/{permission}/{role}','permission_removeRole')->middleware(['permission.id.control']);
+        
+        Route::post('/user/{user}','user_givePermission')->middleware('user.id.control');
+        Route::delete('/user/{user}/{permission}','user_revokePermission')->middleware('user.id.control');
+       
+        Route::post('/role/{role}/permission','role_givePermission')->middleware('role.id.control');
+        Route::delete('/role/{role}/permission/{permission}', 'role_revokePermission')->middleware('permission.id.control');
+    });
+
+
     Route::prefix('/user')->controller(UserController::class)->group(function () {
         Route::get('/', 'index')->name('users.all');
         Route::post('/', 'create_user')->name('users.create');

@@ -16,14 +16,16 @@ use Spatie\Permission\Models\Role;
 class RolesController extends ApiResponseController
 {
     function __construct()
-    {
-        $this->middleware('role:superadmin', ['only' => ['create_role', 'delete_role']]); //bu işlemleri superadmin rolüne sahip olanlar gerçekleştirebilir
-        $this->middleware('role:superadmin|admin', ['only' => ['index', 'role_assignment', 'user_roles', 'role_remove', 'role_filter']]);
-    }
+    {    $this->middleware('permission:roles.create', ['only' => ['create_role']]);
+        //$this->middleware('role:superadmin', ['only' => [ 'create_role','delete_role']]); //bu işlemleri superadmin rolüne sahip olanlar gerçekleştirebilir
+        //$this->middleware('role:superadmin|admin', ['only' => ['index','role_assignment', 'user_roles', 'role_remove', 'role_filter']]);
+        $this->middleware('permission:roles', ['only' => ['create_role', 'index']]);
+    } 
 
     //tüm roller
     public function index()
     {
+
         $roles = Role::all();
         return $this->apiResponse(true, 'Tüm roller listelendi.', 'roles', RolesResource::collection($roles), JsonResponse::HTTP_OK);
     }
@@ -31,7 +33,7 @@ class RolesController extends ApiResponseController
     //yeni bir rol ekleme
     public function create_role(RolesRequest $request)
     {
-        $role = Role::create(['name' => $request->name]);
+        $role = Role::create(['name' => $request->name, 'guard_name' => 'web']);
 
         if ($role) {
             return $this->apiResponse(true, 'Rol başarıyla eklendi.', 'role', new RolesResource($role), JsonResponse::HTTP_OK);
