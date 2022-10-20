@@ -16,8 +16,9 @@ class CommentController extends ApiResponseController
     public function __construct()
     {
         $this->middleware('permission:comment.edit',['only'=> ['store','update']]);
+
         $this->middleware('permission:comment.delete',['only' => ['destroy']]);
-        $this->middleware('permission:comment.view',['only'=>['show','comments_of_post','comments_of_user']]);
+        //$this->middleware('permission:comment.view',['only'=>['show','comments_of_post','comments_of_user']]);
     }
 
 

@@ -62,7 +62,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', 'index')->name('roles.all');
         Route::get('/{user}', 'user_roles')->name('roles.user')->middleware('user.id.control');
         Route::post('/', 'create_role')->name('roles.create');
-        Route::delete('{role}', 'delete_role')->name('roles.delete');
+        Route::delete('{role}', 'delete_role')->middleware('role.id.control');
         Route::post('{user}/assignment', 'role_assignment')->name('roles.assignment')->middleware('user.id.control');
         Route::post('{user}/remove', 'role_remove')->name('roles.remove')->middleware('user.id.control');
         Route::get('/filter/{role}', 'role_filter')->name('roles.filter')->middleware('role.name.control');
@@ -119,17 +119,16 @@ Route::prefix('public')->group(function () {
 
     Route::prefix('/post')->controller(PostController::class)->group(function () {
         Route::get('/', 'index')->name('posts.name');
-        Route::get('/{post}',  'post_by_id')->middleware('post.id.control');
+        Route::get('/{post}',  'post_by_id')->middleware('post.id.control','post.state.control');
         Route::get('/{user}/posts', 'post_by_user')->middleware('user.id.control');
-        Route::get('{post}/category', 'post_get_to_category')->middleware(['post.state.control','post.id.control']); //herkes
+        Route::get('{post}/category', 'post_get_to_category')->middleware(['post.id.control','post.state.control']); //herkes
     });
 
-    Route::get('/like/{post}',[LikeController::class, 'index'])->middleware(['post.state.control','post.id.control']);
+    Route::get('/like/{post}',[LikeController::class, 'index'])->middleware(['post.id.control','post.state.control']);
     Route::get('/like',[LikeController::class, 'most_liked']);
 
-
     Route::prefix('/comment')->controller(CommentController::class)->group(function(){
-        Route::get('/{post}/posts','comments_of_post')->middleware(['post.state.control','post.id.control']);
+        Route::get('/{post}/posts','comments_of_post')->middleware(['post.id.control','post.state.control']);
         Route::get('/{user}/user','comments_of_user')->middleware('user.id.control');
     });
 });

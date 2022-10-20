@@ -14,9 +14,9 @@ class PermissionController extends ApiResponseController
 {
     public function __construct()
     {
-        $this->middleware('role_or_permission:superadmin|permission.create', ['only' => ['store']]);
+        $this->middleware('role_or_permission:superadmin|permission.createdelete', ['only' => ['store', 'destroy']]);
         $this->middleware('permission:permission.view', ['only' => ['index']]);
-        $this->middleware('permission:permission.edit', ['only' => ['update', 'destroy']]);
+        $this->middleware('permission:permission.edit', ['only' => ['update']]);
         $this->middleware('permission:assignment.edit', ['only' => [
             'assignRole', 'removeRole', 'permission_assignRole',
             'permission_removeRole', 'user_givePermission', 'user_revokePermission', 'role_givePermission', 'role_revokePermission'
@@ -29,6 +29,7 @@ class PermissionController extends ApiResponseController
      *
      * @return \Illuminate\Http\Response
      */
+
 
     public function index()
     {
@@ -45,10 +46,13 @@ class PermissionController extends ApiResponseController
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
+
     public function store(PermissionRequest $request)
     {
+        //yeni izin ekleme 
         $store = Permission::create(['name' => $request->name, 'guard_name' => 'web']);
         if ($store) {
+            $store->assignRole('superadmin');
             return $this->apiResponse(true, 'İzin eklendi.', 'permission', new PermissionResource($store), JsonResponse::HTTP_OK);
         }
         return $this->apiResponse(false, 'İzin eklenirken bir hata oluştu.', null, null, JsonResponse::HTTP_NOT_FOUND);
@@ -73,7 +77,8 @@ class PermissionController extends ApiResponseController
      * @return \Illuminate\Http\Response
      */
     public function update(PermissionRequest $request, $id)
-    {
+    {   //izin güncelleme
+        
         $permission = Permission::find($id);
 
         if ($permission->name != $request->name) {
@@ -94,6 +99,7 @@ class PermissionController extends ApiResponseController
      */
     public function destroy($id)
     {
+        //izin silme
         $permission = Permission::Find($id);
         $permission->delete();
 
@@ -104,12 +110,13 @@ class PermissionController extends ApiResponseController
     //roles_has_permission tablosu
     public function permission_assignRole($permission, PermissionRequest $request)
     {
+
         $permissions = Permission::find($permission);
         $role = Role::where('name', $request->name)->first();
-        if ($role->hasPermissionTo($permissions)) {
+        if ($role->hasPermissionTo($permissions)) { //bu rol bu izne sahip mi?
             return $this->apiResponse(false, 'Bu izin rol ilişkisi zaten mevcuttur.', null, null, JsonResponse::HTTP_NOT_FOUND);
         }
-        $permissions->assignRole($request->name);
+        $permissions->assignRole($request->name); //bu izne rolü ekler
 
         return $this->apiResponse(true, 'İzne rol eklenmiştir.', null, null, JsonResponse::HTTP_OK);
     }
@@ -117,10 +124,11 @@ class PermissionController extends ApiResponseController
     //roles_has_permission tablosu
     public function permission_removeRole($permission, $role)
     {
+
         $permission = Permission::find($permission);
         $role = Role::find($role);
         if ($role->hasPermissionTo($permission)) {
-            $permission->removeRole($role);
+            $permission->removeRole($role);  //izinden rol kaldırılmıştır
             return $this->apiResponse(true, 'Rolün izni kaldırılmıştır.', null, null, JsonResponse::HTTP_OK);
         }
         return $this->apiResponse(false, 'Böyle bir izin rol ilişkisi bulunmamaktadır.', null, null, JsonResponse::HTTP_NOT_FOUND);
@@ -130,11 +138,11 @@ class PermissionController extends ApiResponseController
     public function user_givePermission(PermissionRequest $request, $user)
     {
         $user = User::find($user);
-        if ($user->can($request->name)) {
+        if ($user->can($request->name)) { //kullanıcı bu izine sahip mi
             return $this->apiResponse(false, 'Kullanıcı bu izne zaten sahiptir.', null, null, JsonResponse::HTTP_NOT_FOUND);
         }
 
-        $user->givePermissionTo($request->name);
+        $user->givePermissionTo($request->name); //kullanıcıya bu izni ekle
         return $this->apiResponse(true, 'Kullanıcıya istenen izin eklendi.', null, null, JsonResponse::HTTP_OK);
     }
 
@@ -145,7 +153,7 @@ class PermissionController extends ApiResponseController
         $permission = Permission::find($permission);
 
         if ($user->can($permission->name)) {
-            $user->revokePermissionTo($permission);
+            $user->revokePermissionTo($permission); //kullanıcıdan bu izni kaldır
             return $this->apiResponse(true, 'Kullanıcı izni başarıyla kaldırıldı.', null, null, JsonResponse::HTTP_OK);
         }
         return $this->apiResponse(false, 'Kullanıcı bu izne sahip değildir.', null, null, JsonResponse::HTTP_NOT_FOUND);
@@ -156,10 +164,10 @@ class PermissionController extends ApiResponseController
     {
         $role = Role::find($role);
         $permission = Permission::where('name', $request->name)->first();
-        if ($role->hasPermissionTo($permission)) {
+        if ($role->hasPermissionTo($permission)) { //bu rol bu izne sahip mi?
             return $this->apiResponse(false, 'Bu izin rol ilişkisi zaten mevcuttur.', null, null, JsonResponse::HTTP_NOT_FOUND);
         }
-        $role->givePermissionTo($request->name);
+        $role->givePermissionTo($request->name); //role istenen izin eklenir
         return $this->apiResponse(true, 'Role izin eklenmiştir.', null, null, JsonResponse::HTTP_OK);
     }
 
@@ -168,8 +176,8 @@ class PermissionController extends ApiResponseController
     {
         $permission = Permission::find($permission);
         $role = Role::find($role);
-        if ($role->hasPermissionTo($permission->name)) {
-            $role->revokePermissionTo($permission);
+        if ($role->hasPermissionTo($permission->name)) { //rol bu izne sahip mi?
+            $role->revokePermissionTo($permission); //rolden izni kaldır
             return $this->apiResponse(true, 'Rolün izni kaldırılmıştır.', null, null, JsonResponse::HTTP_OK);
         }
         return $this->apiResponse(false, 'Böyle bir izin rol ilişkisi bulunmamaktadır.', null, null, JsonResponse::HTTP_NOT_FOUND);

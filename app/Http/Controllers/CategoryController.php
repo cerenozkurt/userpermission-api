@@ -14,9 +14,11 @@ class CategoryController extends ApiResponseController
 
     public function __construct()
     {
-        $this->middleware('role:superadmin|admin|editor', ['only' => ['create_category', 'delete_category', 'update_category']]);
+       // $this->middleware('role:superadmin|admin|editor', ['only' => ['create_category', 'delete_category', 'update_category']]);
+
+       //category.edit permissionına sahip olan fonksiyonlar
         $this->middleware('permission:category.edit', ['only'=> ['create_category','delete_category','update_category',]]);
-        $this->middleware('permission:category.view',['only'=>['index','get_posts_of_category','search'] ]);
+        //$this->middleware('permission:category.view',['only'=>['index','get_posts_of_category','search'] ]);
     }
 
     //kategorileri listele //herkes
@@ -29,7 +31,7 @@ class CategoryController extends ApiResponseController
         return $this->apiResponse(false, 'Kayıtlı kategori yoktur.', null, null, JsonResponse::HTTP_NOT_FOUND);
     }
 
-    //kategori ekle /superadmin/admin/editor
+    //kategori ekle /superadmin/admin/editor -> category.edit permission
     public function create_category(CategoryRequest $request)
     {
         $category = Category::create([
@@ -41,7 +43,7 @@ class CategoryController extends ApiResponseController
         return $this->apiResponse(false, 'Kategori eklenemedi.', null, null, JsonResponse::HTTP_NOT_FOUND);
     }
 
-    //kategori sil / superadmin/admin/editor
+    //kategori sil / superadmin/admin/editor  -> category.edit permission
     public function delete_category($id)
     {
         $category = Category::find($id);
@@ -53,7 +55,7 @@ class CategoryController extends ApiResponseController
         return $this->apiResponse(false, 'Kategori silinemedi.', null, null, JsonResponse::HTTP_NOT_FOUND);
     }
 
-    //kategori güncelle /superadmin/admin/editor
+    //kategori güncelle /superadmin/admin/editor  -> category.edit permission
     public function update_category($id, CategoryRequest $request)
     {
         $category = Category::find($id);
@@ -70,14 +72,14 @@ class CategoryController extends ApiResponseController
         return $this->apiResponse(false, 'Kategori ismi zaten mevcuttur. Başka isim deneyiniz.', null, null, JsonResponse::HTTP_NOT_FOUND);
     }
 
-    //kategorilerin postlarını getir
+    //kategorilerin postlarını getir //herkes
     public function get_posts_of_category($id)
     {
         $category = Category::find($id);
         return $this->apiResponse(true, $category->name . " kategorisine ait yayınlanmış postlar listelendi.", 'posts', PostResource::collection($category->posts->where('state', '1')), JsonResponse::HTTP_OK);
     }
 
-    //isme göre kategori arama
+    //isme göre kategori arama  //herkes
     public function search($search)
     {
         $category_search = Category::where('name', 'LIKE', '%' . $search . '%')->orderby('id', 'desc');

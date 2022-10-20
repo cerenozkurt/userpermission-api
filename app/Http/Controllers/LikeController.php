@@ -17,7 +17,7 @@ class LikeController extends ApiResponseController
     public function __construct()
     {
         $this->middleware('permission:like.edit', ['only' => ['store','destroy']]);
-        $this->middleware('permission:like.view',['only' => ['index','most_liked']]);
+        //$this->middleware('permission:like.view', ['only' => ['index','most_liked']]);
     }
     /**
      * Display a listing of the resource.
@@ -28,9 +28,9 @@ class LikeController extends ApiResponseController
     //herkes
     public function index($post)
     {
-        $likes = Like::has('post')->where('post_id', $post)->get();   
-        $users_id = $likes->pluck('user_id')->toarray();
-        $users = User::wherein('id',$users_id)->get();
+        $likes = Like::has('post')->where('post_id', $post)->get();    //postu beğenen kişiler
+        $users_id = $likes->pluck('user_id')->toarray(); 
+        $users = User::wherein('id',$users_id)->get();  //postu beğenen kullanıcıların listesi
 
         $data = [
             'post_id' => $post,
@@ -79,7 +79,7 @@ class LikeController extends ApiResponseController
      //herkes
     public function most_liked()
     {
-        $most = Post::where('state','1')->orderby('like_count','desc')->get();
+        $most = Post::where('state','1')->orderby('like_count','desc')->get(); //postları beğeni sırasına göre sıralar
         return $this->apiResponse(true, 'En çok beğenilen postlar.','posts',PostResource::collection($most),JsonResponse::HTTP_OK);
     }
 

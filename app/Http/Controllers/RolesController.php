@@ -16,19 +16,18 @@ use Spatie\Permission\Models\Role;
 class RolesController extends ApiResponseController
 {
     function __construct()
-    {    
+    {
         //$this->middleware('role:superadmin', ['only' => [ 'create_role','delete_role']]); //bu işlemleri superadmin rolüne sahip olanlar gerçekleştirebilir
         //$this->middleware('role:superadmin|admin', ['only' => ['index','role_assignment', 'user_roles', 'role_remove', 'role_filter']]);
 
-        $this->middleware('permission:role.view', ['only' => ['user_roles','role_filter']]);
-        $this->middleware('permission:role.create',['only' => ['create_role']]);
-        $this->middleware('permission:assignment.edit',['only'=>['index','role_assignment','role_remove','delete_role']]);
-    } 
+        $this->middleware('permission:role.view', ['only' => ['user_roles', 'role_filter']]);
+        $this->middleware('permission:role.createdelete', ['only' => ['create_role', 'delete_role']]);
+        $this->middleware('permission:assignment.edit', ['only' => ['index', 'role_assignment', 'role_remove']]);
+    }
 
-    //tüm roller
+    //tüm roller  superadmin/admin 
     public function index()
     {
-
         $roles = Role::all();
         return $this->apiResponse(true, 'Tüm roller listelendi.', 'roles', RolesResource::collection($roles), JsonResponse::HTTP_OK);
     }
@@ -47,15 +46,14 @@ class RolesController extends ApiResponseController
     //rol silme
     public function delete_role($role)
     {
-        if (DB::table('roles')->where('name', $role)->first()) {
-            $delete = Role::findByName($role)->delete();
+        $roles = Role::find($role);
 
-            if ($delete) {
-                return $this->apiResponse(true, 'Rol başarıyla silindi.', 'role', $role, JsonResponse::HTTP_OK);
-            }
-            return $this->apiResponse(false, 'Rol silinirken bir hata oluştu.', 'role', $role, JsonResponse::HTTP_NOT_FOUND);
+        $delete =  $roles->delete();
+
+        if ($delete) {
+            return $this->apiResponse(true, 'Rol başarıyla silindi.', 'role', $roles, JsonResponse::HTTP_OK);
         }
-        return $this->apiResponse(false, 'Rol bulunamadı.', 'role', $role, JsonResponse::HTTP_NOT_FOUND);
+        return $this->apiResponse(false, 'Rol silinirken bir hata oluştu.', 'role', $roles, JsonResponse::HTTP_NOT_FOUND);
     }
 
     //kullanıcıya rol atama, superadmin ve admin atayabilir, admin superadmin rolünü atayamaz
@@ -81,7 +79,7 @@ class RolesController extends ApiResponseController
         }
     }
 
-    //girilen kullanıcının sahip olduğu roller
+    //girilen kullanıcının sahip olduğu roller  //superadmin,admin
     public function user_roles($id)
     {
         $user = User::find($id);
@@ -92,7 +90,7 @@ class RolesController extends ApiResponseController
     public function role_remove($id, RolesRequest $request)
     {
         //USER ROLÜ KAYITLI TÜM KULLANICILARIN ORTAK ROLÜ OLDUĞU İÇİN KALDIRILAMAZ. ANCAK KULLANICI HESABI SİLİNİRSE KALDIRILIR.
-        if($request->role == 'user'){
+        if ($request->role == 'user') {
             return $this->apiResponse(false, 'User rolü her kullanıcı için ortak roldür. Kaldırılamaz.', null, null, JsonResponse::HTTP_FORBIDDEN);
         }
 
@@ -113,16 +111,13 @@ class RolesController extends ApiResponseController
                 return $this->apiResponse(true, 'Kullanıcıdan ' . $request->role . ' rolü kaldırıldı.', 'user', new UserResource($user), JsonResponse::HTTP_OK);
             }
             return $this->apiResponse(false, 'Kullanıcı ' . $request->role . ' rolüne zaten sahip değil.', 'user', new UserResource($user), JsonResponse::HTTP_NOT_FOUND);
-
         }
     }
 
     //girilen role sahip kullanıcıları listeler
     public function role_filter($role)
     {
-        $users = User::role($role)->get(); 
-        return ['in_'.$role.'_role' => UserResource::collection($users)  ];
+        $users = User::role($role)->get();
+        return ['in_' . $role . '_role' => UserResource::collection($users)];
     }
-
-
 }

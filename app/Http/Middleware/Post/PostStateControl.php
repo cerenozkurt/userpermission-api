@@ -23,6 +23,6 @@ class PostStateControl
         if (Post::where('id', $request->route('post'))->where('state', '1')->first()) {
             return $next($request);
         }
-        return $apiresponse->apiResponse(false, 'Yetkisiz işlem.', null,null,JsonResponse::HTTP_FORBIDDEN);
+        return $apiresponse->apiResponse(false, 'Post daha onaylanmamıştır.', null,null,JsonResponse::HTTP_FORBIDDEN);
     }
 }
