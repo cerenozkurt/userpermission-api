@@ -25,14 +25,14 @@ class PostRequest extends BaseFormRequest
     public function rules(Request $request)
     {
         switch ($request->route()->getActionMethod()) {
-            case 'create_post':
+            case 'create':
                 return [
                     'title' => ['required', 'max:100'],
                     'content' => ['required', 'max:15000'],
                     'category_id' => ['required', 'exists:categories,id'],
                 ];
                 break;
-            case 'update_post':
+            case 'update':
                 return [
                     'title' => ['max:100'],
                     'content' => ['max:15000'],

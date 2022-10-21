@@ -73,23 +73,28 @@ Route::middleware('auth:sanctum')->group(function () {
     });*/
 
     Route::prefix('/category')->controller(CategoryController::class)->group(function () {
-        Route::post('/', 'create_category')->name('categories.create');
+        Route::post('/', 'create')->name('categories.create');
         Route::delete('/{category}', 'delete_category')->name('categories.delete')->middleware('category.id.control');
         Route::post('/{category}/update', 'update_category')->name('categories.update')->middleware('category.id.control');
         Route::get('/{category}/posts','get_posts_of_category')->middleware('category.id.control');
         Route::get('/{category}','search');
     });
 
+
+
     Route::prefix('/post')->controller(PostController::class)->group(function () {
-        Route::post('/', 'create_post')->name('posts.create');
+        Route::post('/', 'create');
+        Route::post('/{post}/update', 'update')->middleware('post.id.control');
+        Route::delete('/{post}', 'delete')->name('posts.delete')->middleware('post.id.control');
+        Route::post('/{post}/category', 'post_update_to_category')->middleware('post.id.control');
+
+
+
         Route::get('/awaiting', 'awaiting_approve');
         Route::get('{post}/approved', 'approve_post')->middleware('post.id.control');
-        Route::delete('/{post}', 'delete_post')->name('posts.delete')->middleware('post.id.control');
-        Route::post('/{post}/update', 'update_post')->name('posts.update')->middleware('post.id.control');
         Route::get('/my', 'my_posts');
         Route::get('/{user}/posts', 'allposts_by_user')->middleware('user.id.control');
         //Route::post('/{post}/category', 'post_add_to_category')->middleware('post.id.control');
-        Route::post('/{post}/category', 'post_update_to_category')->middleware('post.id.control');
 
         Route::post('/{post}/category/delete', 'post_delete_to_category')->middleware('post.id.control');
     });
