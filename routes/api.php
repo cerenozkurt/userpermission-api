@@ -87,14 +87,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/{post}/update', 'update')->middleware('post.id.control');
         Route::delete('/{post}', 'delete')->name('posts.delete')->middleware('post.id.control');
         Route::post('/{post}/category', 'post_update_to_category')->middleware('post.id.control');
-
-
-
         Route::get('/awaiting', 'awaiting_approve');
         Route::get('{post}/approved', 'approve_post')->middleware('post.id.control');
         Route::get('/my', 'my_posts');
         Route::get('/{user}/posts', 'allposts_by_user')->middleware('user.id.control');
-        //Route::post('/{post}/category', 'post_add_to_category')->middleware('post.id.control');
 
         Route::post('/{post}/category/delete', 'post_delete_to_category')->middleware('post.id.control');
     });

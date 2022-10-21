@@ -104,8 +104,8 @@ class LikeController extends ApiResponseController
     public function destroy($id)
     {
         $like = Like::find($id);
-        $user = auth()->user();
-        if ($like->user_id == $user->id) {
+        $user = User::find(auth()->user()->id);
+        if ($user->can('like-delete',$like)) {  //like-delete policy
             $like->delete();
 
             $post = Post::find($like->post->id);

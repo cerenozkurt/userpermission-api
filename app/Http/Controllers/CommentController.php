@@ -15,9 +15,9 @@ class CommentController extends ApiResponseController
 
     public function __construct()
     {
-        $this->middleware('permission:comment.edit',['only'=> ['store','update']]);
+        $this->middleware('permission:comment.edit', ['only' => ['store', 'update']]);
 
-        $this->middleware('permission:comment.delete',['only' => ['destroy']]);
+        $this->middleware('permission:comment.delete', ['only' => ['destroy']]);
         //$this->middleware('permission:comment.view',['only'=>['show','comments_of_post','comments_of_user']]);
     }
 
@@ -82,9 +82,7 @@ class CommentController extends ApiResponseController
         //yorum benimse güncelle
         $user = auth()->user();
         $comment = Comment::find($id);
-        $roles = $user->roles->pluck('name')->toarray();
-
-        if ($comment->user_id == $user->id) { //yorum kullanıcının kendi yorumuysa veya kullanıcı admin/superadmin/editorse
+        if ($request->user()->can('comment-update', $comment)) { //yorum kullanıcının kendi yorumuysa 
             $comment->comment = $request->comment ?? $comment->comment;
             $comment->save();
 
@@ -104,11 +102,10 @@ class CommentController extends ApiResponseController
         $comment = Comment::find($id);
         $post_id = $comment->post_id;
 
-        $user = auth()->user();
+        $user = User::find(auth()->user()->id);
 
-        $roles = $user->roles->pluck('name')->toarray();
 
-        if ($comment->user_id == $user->id || in_array('superadmin', $roles) || in_array('admin', $roles) || in_array('editor', $roles)) { //yorum kullanıcının kendi yorumuysa veya kullanıcı admin/superadmin/editorse
+        if ($user->can('comment-delete', $comment)) { //yorum kullanıcının kendi yorumuysa veya kullanıcı admin/superadmin/editorse
             $delete = $comment->delete();
             $post =  Post::find($post_id);
             $post->comment_count = $post->comment_count - 1;
@@ -139,7 +136,7 @@ class CommentController extends ApiResponseController
     public function comments_of_user($user_id)
     {
         $user = User::find($user_id);
-        $comments = Comment::where('user_id', $user_id)->orderby('created_at','desc')->get();
+        $comments = Comment::where('user_id', $user_id)->orderby('created_at', 'desc')->get();
         if (!($comments->toarray())) {
             return $this->apiResponse(false, 'Bu kullanıcıya ait yorum bulunamadı.', 'user', null, JsonResponse::HTTP_NOT_FOUND);
         }

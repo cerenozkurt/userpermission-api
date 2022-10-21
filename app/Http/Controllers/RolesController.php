@@ -59,24 +59,18 @@ class RolesController extends ApiResponseController
     //kullanıcıya rol atama, superadmin ve admin atayabilir, admin superadmin rolünü atayamaz
     public function role_assignment($id, RolesRequest $request)
     {
-        $authuser = Auth::user();
-        if (in_array('superadmin', $authuser->roles->pluck('name')->toarray())) { //superadminse
-            $user = User::find($id);
-            if (in_array($request->role, $user->roles->pluck('name')->toarray())) { //atanmak istenen rol zaten atanmış ise
-                return $this->apiResponse(false, 'Kullanıcı ' . $request->role . ' rolüne zaten sahip.', 'user', new UserResource($user), JsonResponse::HTTP_NOT_FOUND);
+        $user = User::find($id);
+
+        if($request->user()->can('role-assignment', [$request->role, $user] )){
+
+            if ($user->hasAnyRole($request->role)) { //kullanıcı zaten böyle bir role sahipse
+                return $this->apiResponse(false, 'Kullanıcı bu role zaten sahip.', 'user', new UserResource($user), JsonResponse::HTTP_NOT_FOUND);
             }
-            $user->assignRole($request->role);
-            return $this->apiResponse(true, 'Kullanıcıya ' . $request->role . ' rolü atandı.', 'user', new UserResource($user), JsonResponse::HTTP_OK);
-        } elseif (in_array('admin', $authuser->roles->pluck('name')->toarray())) { //adminse, superadmin dışındaki rol atamalarını yapabilir
-            $user = User::find($id);
-            if ($request->role == 'superadmin' || in_array('superadmin', $user->roles->pluck('name')->toarray())) { //atanmak istenen rol süoeradminse veya kullanıcı superadminse 
-                return $this->apiResponse(false, 'Admin superadmin rolü ile ilgili işlem yapamaz.', null, null, JsonResponse::HTTP_FORBIDDEN);
-            } elseif (in_array($request->role, $user->roles->pluck('name')->toarray())) { //atanmak istenen rol zaten atanmış ise
-                return $this->apiResponse(false, 'Kullanıcı ' . $request->role . ' rolüne zaten sahip.', 'user', new UserResource($user), JsonResponse::HTTP_NOT_FOUND);
-            }
+
             $user->assignRole($request->role);
             return $this->apiResponse(true, 'Kullanıcıya ' . $request->role . ' rolü atandı.', 'user', new UserResource($user), JsonResponse::HTTP_OK);
         }
+        return $this->apiResponse(false, 'Yetkisiz işlem.', null, null, JsonResponse::HTTP_FORBIDDEN);
     }
 
     //girilen kullanıcının sahip olduğu roller  //superadmin,admin
@@ -93,25 +87,17 @@ class RolesController extends ApiResponseController
         if ($request->role == 'user') {
             return $this->apiResponse(false, 'User rolü her kullanıcı için ortak roldür. Kaldırılamaz.', null, null, JsonResponse::HTTP_FORBIDDEN);
         }
+        $user = User::find($id);
 
-        $authuser = Auth::user();
-        if (in_array('superadmin', $authuser->roles->pluck('name')->toarray())) { //superadminse
-            $user = User::find($id);
-            if (in_array($request->role, $user->roles->pluck('name')->toarray())) { //silinmek istenen rol kullanıcının rolü mü? ve user rolüne eşit değilse
-                $user->removeRole($request->role); //rolü sil
-                return $this->apiResponse(true, 'Kullanıcıdan ' . $request->role . ' rolü kaldırıldı.', 'user', new UserResource($user), JsonResponse::HTTP_OK);
-            }
-            return $this->apiResponse(false, 'Kullanıcı ' . $request->role . ' rolüne zaten sahip değil.', 'user', new UserResource($user), JsonResponse::HTTP_NOT_FOUND);
-        } elseif (in_array('admin', $authuser->roles->pluck('name')->toarray())) { //adminse, superadmin ve admin dışındaki rol silmelerini yapabilir
-            $user = User::find($id);
-            if ($request->role == 'superadmin' || $request->role == 'admin') { //silinmek istenen rol süperadminse veya kullanıcı superadminse 
-                return $this->apiResponse(false, 'Admin superadmin ve admin rolü ile ilgili rol silme işlemi yapamaz.', null, null, JsonResponse::HTTP_FORBIDDEN);
-            } elseif (in_array($request->role, $user->roles->pluck('name')->toarray())) { //silinmek istenen rol kullanıcının rolü mü? ve user rolüne eşit değilse
+        if($request->user()->can('role-remove', [$request->role, $user])){
+            if ($user->hasAnyRole($request->role)) { //silinmek istenen rol kullanıcının rolü mü? ve user rolüne eşit değilse
                 $user->removeRole($request->role); //rolü sil
                 return $this->apiResponse(true, 'Kullanıcıdan ' . $request->role . ' rolü kaldırıldı.', 'user', new UserResource($user), JsonResponse::HTTP_OK);
             }
             return $this->apiResponse(false, 'Kullanıcı ' . $request->role . ' rolüne zaten sahip değil.', 'user', new UserResource($user), JsonResponse::HTTP_NOT_FOUND);
         }
+        return $this->apiResponse(false, 'Yetkisiz işlem.', null, null, JsonResponse::HTTP_FORBIDDEN);
+
     }
 
     //girilen role sahip kullanıcıları listeler
